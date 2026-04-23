@@ -1,0 +1,44 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sub_service_app
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "${APP_EXTERNAL_PORT}:${APP_PORT}"
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  db:
+    image: postgres:17-alpine
+    container_name: sub_service_db
+    restart: always
+    shm_size: 1g
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "${DB_EXTERNAL_PORT}:${DB_PORT}"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  postgres_data:
