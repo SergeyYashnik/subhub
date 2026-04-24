@@ -12,4 +12,4 @@ RUN go mod download
 
 COPY . .
 
-CMD ["air", "-c", ".air.toml"]
+CMD swag init -g cmd/api/main.go && air -c .air.toml

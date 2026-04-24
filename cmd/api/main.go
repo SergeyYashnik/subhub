@@ -9,12 +9,18 @@ import (
 	"log"
 	"net/http"
 
+	_ "Test_EM/docs"
+
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
+// @title           Subscriptions API
+// @version         1.0
+// @description     Сервис управления подписками.
 func main() {
+	log.Println("Starting server...")
 	config.LoadConfig()
 
 	runMigrations(config.Cfg.DbURL)

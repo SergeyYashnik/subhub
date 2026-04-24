@@ -11,6 +11,7 @@ type Config struct {
 	DbURL   string
 	AppPort string
 	Env     string
+	AppURL  string
 }
 
 func LoadConfig() {
@@ -28,5 +29,6 @@ func LoadConfig() {
 		DbURL:   dbURL,
 		AppPort: appPort,
 		Env:     os.Getenv("ENV"),
+		AppURL:  os.Getenv("APP_URL"),
 	}
 }

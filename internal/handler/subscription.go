@@ -18,6 +18,16 @@ func NewSubscriptionHandler(s *service.SubscriptionService) *SubscriptionHandler
 
 const dateLayout = "01-2006"
 
+// Create godoc
+// @Summary      Создать подписку
+// @Description  Создает новую запись о подписке пользователя
+// @Tags         subscriptions
+// @Accept       json
+// @Produce      json
+// @Param        input body models.CreateRequest true "Данные подписки"
+// @Success      201  {object}  map[string]string
+// @Failure      400  {string}  string "invalid request body"
+// @Router       /subscriptions [post]
 func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateRequest
 
@@ -59,6 +69,13 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// List godoc
+// @Summary      Список подписок
+// @Description  Возвращает все существующие подписки
+// @Tags         subscriptions
+// @Produce      json
+// @Success      200  {array}   models.Subscription
+// @Router       /subscriptions [get]
 func (h *SubscriptionHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

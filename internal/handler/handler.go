@@ -1,6 +1,10 @@
 package handler
 
-import "net/http"
+import (
+	"net/http"
+
+	httpSwagger "github.com/swaggo/http-swagger"
+)
 
 type Handler struct {
 	Subscription *SubscriptionHandler
@@ -12,6 +16,8 @@ func NewHandler(sub *SubscriptionHandler) *Handler {
 
 func (h *Handler) InitRoutes() *http.ServeMux {
 	mux := http.NewServeMux()
+
+	mux.Handle("/swagger/", httpSwagger.WrapHandler)
 
 	mux.HandleFunc("GET /subscriptions", h.Subscription.List)
 	mux.HandleFunc("POST /subscriptions", h.Subscription.Create)
