@@ -12,7 +12,7 @@ type Subscription struct {
 	EndDate     *time.Time `json:"end_date,omitempty" db:"end_date"`
 }
 
-type CreateRequest struct {
+type CreateSubscriptionRequest struct {
 	ServiceName string `json:"service_name"`
 	Price       int    `json:"price"`
 	UserID      string `json:"user_id"`
@@ -20,7 +20,7 @@ type CreateRequest struct {
 	EndDate     string `json:"end_date,omitempty"`
 }
 
-type UpdateRequest struct {
+type UpdateSubscriptionRequest struct {
 	ServiceName string `json:"service_name"`
 	Price       int    `json:"price"`
 	StartDate   string `json:"start_date"`

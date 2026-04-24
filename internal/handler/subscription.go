@@ -24,12 +24,12 @@ const dateLayout = "01-2006"
 // @Tags         subscriptions
 // @Accept       json
 // @Produce      json
-// @Param        input body models.CreateRequest true "Данные подписки"
+// @Param        input body models.CreateSubscriptionRequest true "Данные подписки"
 // @Success      201  {object}  map[string]string
 // @Failure      400  {string}  string "invalid request body"
 // @Router       /subscriptions [post]
 func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
-	var req models.CreateRequest
+	var req models.CreateSubscriptionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "invalid request body", http.StatusBadRequest)
@@ -69,13 +69,6 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 }
 
-// List godoc
-// @Summary      Список подписок
-// @Description  Возвращает все существующие подписки
-// @Tags         subscriptions
-// @Produce      json
-// @Success      200  {array}   models.Subscription
-// @Router       /subscriptions [get]
 func (h *SubscriptionHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -111,7 +104,7 @@ func (h *SubscriptionHandler) Get(w http.ResponseWriter, r *http.Request) {
 // Update — обновление записи
 func (h *SubscriptionHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
-	var req models.UpdateRequest
+	var req models.UpdateSubscriptionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, "bad request", http.StatusBadRequest)
