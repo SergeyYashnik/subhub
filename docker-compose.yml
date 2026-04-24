@@ -2,7 +2,7 @@ services:
   app:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: ./docker/local/Dockerfile
     container_name: sub_service_app
     restart: always
     env_file:
