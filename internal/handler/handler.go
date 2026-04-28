@@ -39,6 +39,7 @@ func (h *Handler) InitRoutes() *http.ServeMux {
 	mux.HandleFunc("GET /subscriptions/{id}", h.Subscription.Get)
 	mux.HandleFunc("PUT /subscriptions/{id}", h.Subscription.Update)
 	mux.HandleFunc("DELETE /subscriptions/{id}", h.Subscription.Delete)
+	mux.HandleFunc("GET /subscriptions/stats", h.Subscription.GetStats)
 
 	return mux
 }

@@ -111,3 +111,23 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 
 	return nil
 }
+
+func (r *Repository) GetSum(ctx context.Context, userID string, serviceName string, from, to time.Time) (int, error) {
+	var total int
+
+	query := `
+		SELECT COALESCE(SUM(price), 0) 
+		FROM subscriptions 
+		WHERE user_id = $1 
+		  AND start_date >= $2 
+		  AND start_date <= $3`
+
+	if serviceName != "" {
+		query += " AND service_name = $4"
+		err := r.Db.GetContext(ctx, &total, query, userID, from, to, serviceName)
+		return total, err
+	}
+
+	err := r.Db.GetContext(ctx, &total, query, userID, from, to)
+	return total, err
+}

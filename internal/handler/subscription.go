@@ -193,3 +193,39 @@ func (h *SubscriptionHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		Message: "Subscription deleted successfully",
 	})
 }
+
+// GetStats godoc
+// @Summary      Получить статистику затрат
+// @Description  Считает суммарную стоимость подписок за период с фильтрами
+// @Tags         subscriptions
+// @Produce      json
+// @Param        user_id       query     string  true   "ID пользователя"
+// @Param        service_name  query     string  false  "Название сервиса"
+// @Param        from          query     string  true   "Начало периода (MM-YYYY)"
+// @Param        to            query     string  true   "Конец периода (MM-YYYY)"
+// @Success      200  {object}  Response{data=map[string]int}
+// @Router       /subscriptions/stats [get]
+func (h *SubscriptionHandler) GetStats(w http.ResponseWriter, r *http.Request) {
+	query := r.URL.Query()
+
+	userID := query.Get("user_id")
+	serviceName := query.Get("service_name")
+	from := query.Get("from")
+	to := query.Get("to")
+
+	// Базовая валидация обязательных полей
+	if userID == "" || from == "" || to == "" {
+		sendJSON(w, http.StatusBadRequest, Response{Error: "user_id, from and to are required parameters"})
+		return
+	}
+
+	total, err := h.service.GetStats(r.Context(), userID, serviceName, from, to)
+	if err != nil {
+		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
+		return
+	}
+
+	sendJSON(w, http.StatusOK, Response{
+		Data: map[string]int{"total_cost": total},
+	})
+}

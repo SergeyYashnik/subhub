@@ -3,6 +3,7 @@ package repository
 import (
 	"Test_EM/internal/models"
 	"context"
+	"time"
 )
 
 type Subscription interface {
@@ -11,4 +12,5 @@ type Subscription interface {
 	GetByID(ctx context.Context, id string) (models.Subscription, error)
 	Update(ctx context.Context, sub models.Subscription) error
 	Delete(ctx context.Context, id string) error
+	GetSum(ctx context.Context, userID string, serviceName string, from, to time.Time) (int, error)
 }
