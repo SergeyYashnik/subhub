@@ -1,10 +1,25 @@
 package handler
 
 import (
+	"encoding/json"
 	"net/http"
 
 	httpSwagger "github.com/swaggo/http-swagger"
 )
+
+// Response универсальный формат ответа (аналог API Resources)
+// @name APIResponse
+type Response struct {
+	Data    interface{} `json:"data,omitempty"`
+	Message string      `json:"message,omitempty"`
+	Error   string      `json:"error,omitempty"`
+}
+
+func sendJSON(w http.ResponseWriter, status int, payload interface{}) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	json.NewEncoder(w).Encode(payload)
+}
 
 type Handler struct {
 	Subscription *SubscriptionHandler

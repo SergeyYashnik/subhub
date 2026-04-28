@@ -25,20 +25,23 @@ const dateLayout = "01-2006"
 // @Accept       json
 // @Produce      json
 // @Param        input body models.CreateSubscriptionRequest true "Данные подписки"
-// @Success      201  {object}  map[string]string
-// @Failure      400  {string}  string "invalid request body"
+// @Success      201  {object}  Response{data=map[string]string} "Успешное создание"
+// @Failure      400  {object}  Response "Ошибка в запросе"
+// @Failure      500  {object}  Response "Ошибка сервера"
 // @Router       /subscriptions [post]
 func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateSubscriptionRequest
 
+	// Используем Decoder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid request body"})
 		return
 	}
 
+	// Валидация даты (можно потом вынести в сервис или хелпер)
 	start, err := time.Parse(dateLayout, req.StartDate)
 	if err != nil {
-		http.Error(w, "invalid start_date format, use MM-YYYY", http.StatusBadRequest)
+		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid start_date format, use MM-YYYY"})
 		return
 	}
 
@@ -52,67 +55,97 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if req.EndDate != "" {
 		end, err := time.Parse(dateLayout, req.EndDate)
 		if err != nil {
-			http.Error(w, "invalid end_date format", http.StatusBadRequest)
+			sendJSON(w, http.StatusBadRequest, Response{Error: "invalid end_date format"})
 			return
 		}
 		sub.EndDate = &end
 	}
 
+	// Вызов сервиса
 	if err := h.service.CreateSubscription(r.Context(), sub); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(map[string]string{"status": "created"})
-
+	// Красивый ответ в стиле Resource
+	sendJSON(w, http.StatusCreated, Response{
+		Message: "Subscription created successfully",
+		Data:    map[string]string{"status": "created"},
+	})
 }
 
+// List godoc
+// @Summary      Получить список подписок
+// @Description  Возвращает все существующие подписки
+// @Tags         subscriptions
+// @Produce      json
+// @Success      200  {object}  Response{data=[]models.Subscription} "Список подписок"
+// @Failure      500  {object}  Response "Ошибка сервера"
+// @Router       /subscriptions [get]
 func (h *SubscriptionHandler) List(w http.ResponseWriter, r *http.Request) {
-	ctx := r.Context()
-
-	subs, err := h.service.GetAllSubscriptions(ctx)
+	subs, err := h.service.GetAllSubscriptions(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(subs)
+	sendJSON(w, http.StatusOK, Response{
+		Data: subs,
+	})
 }
 
-// Get — получение одной записи по ID
+// Get godoc
+// @Summary      Получить подписку по ID
+// @Description  Возвращает одну запись о подписке
+// @Tags         subscriptions
+// @Produce      json
+// @Param        id   path      string  true  "ID подписки (UUID)"
+// @Success      200  {object}  Response{data=models.Subscription} "Данные подписки"
+// @Failure      404  {object}  Response "Подписка не найдена"
+// @Router       /subscriptions/{id} [get]
 func (h *SubscriptionHandler) Get(w http.ResponseWriter, r *http.Request) {
-	// Достаем {id} из маршрута (Go 1.22)
 	id := r.PathValue("id")
 	if id == "" {
-		http.Error(w, "missing id", http.StatusBadRequest)
+		sendJSON(w, http.StatusBadRequest, Response{Error: "missing id"})
 		return
 	}
 
 	sub, err := h.service.GetSubscriptionByID(r.Context(), id)
 	if err != nil {
-		http.Error(w, "subscription not found", http.StatusNotFound)
+		sendJSON(w, http.StatusNotFound, Response{Error: "subscription not found"})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(sub)
+	sendJSON(w, http.StatusOK, Response{
+		Data: sub,
+	})
 }
 
-// Update — обновление записи
+// Update godoc
+// @Summary      Обновить подписку
+// @Description  Обновляет данные существующей подписки
+// @Tags         subscriptions
+// @Accept       json
+// @Produce      json
+// @Param        id    path      string  true  "ID подписки (UUID)"
+// @Param        input body      models.UpdateSubscriptionRequest  true  "Новые данные"
+// @Success      200  {object}  Response{data=models.Subscription} "Обновленная подписка"
+// @Failure      400  {object}  Response "Ошибка валидации"
+// @Router       /subscriptions/{id} [put]
 func (h *SubscriptionHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 	var req models.UpdateSubscriptionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "bad request", http.StatusBadRequest)
+		sendJSON(w, http.StatusBadRequest, Response{Error: "bad request body"})
 		return
 	}
 
-	// Парсим даты, если они пришли (в реальном коде лучше вынести в хелпер)
-	start, _ := time.Parse("01-2006", req.StartDate)
+	start, err := time.Parse(dateLayout, req.StartDate)
+	if err != nil {
+		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid start_date format"})
+		return
+	}
 
 	sub := models.Subscription{
 		ID:          id,
@@ -121,22 +154,42 @@ func (h *SubscriptionHandler) Update(w http.ResponseWriter, r *http.Request) {
 		StartDate:   start,
 	}
 
+	// Если есть дата окончания
+	if req.EndDate != "" {
+		end, err := time.Parse(dateLayout, req.EndDate)
+		if err == nil {
+			sub.EndDate = &end
+		}
+	}
+
 	if err := h.service.UpdateSubscription(r.Context(), sub); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent) // 204
+	sendJSON(w, http.StatusOK, Response{
+		Message: "Subscription updated successfully",
+		Data:    sub,
+	})
 }
 
-// Delete — удаление записи
+// Delete godoc
+// @Summary      Удалить подписку
+// @Description  Удаляет запись из базы по ID
+// @Tags         subscriptions
+// @Param        id   path      string  true  "ID подписки (UUID)"
+// @Success      200  {object}  Response "Успешное удаление"
+// @Failure      500  {object}  Response "Ошибка удаления"
+// @Router       /subscriptions/{id} [delete]
 func (h *SubscriptionHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	if err := h.service.DeleteSubscription(r.Context(), id); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
 		return
 	}
 
-	w.WriteHeader(http.StatusNoContent)
+	sendJSON(w, http.StatusOK, Response{
+		Message: "Subscription deleted successfully",
+	})
 }
