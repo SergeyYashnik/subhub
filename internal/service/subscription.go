@@ -67,10 +67,34 @@ func (s *SubscriptionService) GetStats(ctx context.Context, userID, serviceName,
 		return 0, fmt.Errorf("invalid to_date: %w", err)
 	}
 
-	sum, err := s.repo.GetSum(ctx, userID, serviceName, from, to)
-	if err != nil {
-		return 0, err
+	if to.Before(from) {
+		return 0, fmt.Errorf("to_date cannot be earlier than from_date")
 	}
 
-	return sum, nil
+	subs, err := s.repo.GetActiveInPeriod(ctx, userID, serviceName, from, to)
+	if err != nil {
+		return 0, fmt.Errorf("failed to get subscriptions: %w", err)
+	}
+
+	totalCost := 0
+
+	for _, sub := range subs {
+		calcStart := sub.StartDate
+		if calcStart.Before(from) {
+			calcStart = from
+		}
+
+		calcEnd := to
+		if sub.EndDate != nil && sub.EndDate.Before(to) {
+			calcEnd = *sub.EndDate
+		}
+
+		monthsActive := (calcEnd.Year()-calcStart.Year())*12 + int(calcEnd.Month()) - int(calcStart.Month()) + 1
+
+		if monthsActive > 0 {
+			totalCost += monthsActive * sub.Price
+		}
+	}
+
+	return totalCost, nil
 }

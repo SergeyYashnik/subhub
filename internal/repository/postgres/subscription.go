@@ -112,22 +112,23 @@ func (r *Repository) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-func (r *Repository) GetSum(ctx context.Context, userID string, serviceName string, from, to time.Time) (int, error) {
-	var total int
+func (r *Repository) GetActiveInPeriod(ctx context.Context, userID, serviceName string, from, to time.Time) ([]models.Subscription, error) {
+	var subs []models.Subscription
 
 	query := `
-		SELECT COALESCE(SUM(price), 0) 
+		SELECT id, service_name, price, user_id, start_date, end_date 
 		FROM subscriptions 
 		WHERE user_id = $1 
-		  AND start_date >= $2 
-		  AND start_date <= $3`
+		  AND start_date <= $3 
+		  AND (end_date IS NULL OR end_date >= $2)`
 
+	var err error
 	if serviceName != "" {
 		query += " AND service_name = $4"
-		err := r.Db.GetContext(ctx, &total, query, userID, from, to, serviceName)
-		return total, err
+		err = r.Db.SelectContext(ctx, &subs, query, userID, from, to, serviceName)
+	} else {
+		err = r.Db.SelectContext(ctx, &subs, query, userID, from, to)
 	}
 
-	err := r.Db.GetContext(ctx, &total, query, userID, from, to)
-	return total, err
+	return subs, err
 }
