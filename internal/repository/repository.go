@@ -7,7 +7,7 @@ import (
 )
 
 type Subscription interface {
-	Create(ctx context.Context, sub models.Subscription) error
+	Create(ctx context.Context, sub models.Subscription) (models.Subscription, error)
 	GetAll(ctx context.Context) ([]models.Subscription, error)
 	GetByID(ctx context.Context, id string) (models.Subscription, error)
 	Update(ctx context.Context, sub models.Subscription) error

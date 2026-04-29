@@ -24,8 +24,8 @@ const dateLayout = "01-2006"
 // @Tags         subscriptions
 // @Accept       json
 // @Produce      json
-// @Param        input body models.CreateSubscriptionRequest true "Данные подписки"
-// @Success      201  {object}  Response{data=map[string]string} "Успешное создание"
+// @Param        input body     models.CreateSubscriptionRequest true "Данные подписки"
+// @Success      201  {object}  Response{data=models.Subscription} "Успешное создание"
 // @Failure      400  {object}  Response "Ошибка в запросе"
 // @Failure      500  {object}  Response "Ошибка сервера"
 // @Router       /subscriptions [post]
@@ -59,14 +59,14 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		sub.EndDate = &end
 	}
 
-	if err := h.service.CreateSubscription(r.Context(), sub); err != nil {
+	createdSub, err := h.service.CreateSubscription(r.Context(), sub)
+	if err != nil {
 		sendJSON(w, http.StatusBadRequest, Response{Error: err.Error()})
 		return
 	}
 
 	sendJSON(w, http.StatusCreated, Response{
-		Message: "Subscription created successfully",
-		Data:    map[string]string{"status": "created"},
+		Data: createdSub,
 	})
 }
 
@@ -179,8 +179,7 @@ func (h *SubscriptionHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	sendJSON(w, http.StatusOK, Response{
-		Message: "Subscription updated successfully",
-		Data:    currentSub,
+		Data: currentSub,
 	})
 }
 

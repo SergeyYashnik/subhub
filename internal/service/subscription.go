@@ -17,19 +17,19 @@ func NewSubscriptionService(r *postgres.Repository) *SubscriptionService {
 	return &SubscriptionService{repo: r}
 }
 
-func (s *SubscriptionService) CreateSubscription(ctx context.Context, sub models.Subscription) error {
+func (s *SubscriptionService) CreateSubscription(ctx context.Context, sub models.Subscription) (models.Subscription, error) {
 	if sub.Price < 0 {
-		return fmt.Errorf("цена не может быть отрицательной")
+		return models.Subscription{}, fmt.Errorf("the price cannot be negative")
 	}
 	if sub.ServiceName == "" {
-		return fmt.Errorf("название сервиса обязательно")
+		return models.Subscription{}, fmt.Errorf("the name of the service is required")
 	}
 	if sub.UserID == "" {
-		return fmt.Errorf("ID пользователя обязателен")
+		return models.Subscription{}, fmt.Errorf("the user's ID is required")
 	}
 
 	if sub.EndDate != nil && sub.EndDate.Before(sub.StartDate) {
-		return fmt.Errorf("end_date cannot be earlier than start_date")
+		return models.Subscription{}, fmt.Errorf("end_date cannot be earlier than start_date")
 	}
 
 	return s.repo.Create(ctx, sub)

@@ -33,18 +33,25 @@ func New(dsn string) (*Repository, error) {
 	return &Repository{Db: db}, nil
 }
 
-func (r *Repository) Create(ctx context.Context, sub models.Subscription) error {
+func (r *Repository) Create(ctx context.Context, sub models.Subscription) (models.Subscription, error) {
 	query := `
-		INSERT INTO subscriptions (service_name, price, user_id, start_date, end_date)
-		VALUES (:service_name, :price, :user_id, :start_date, :end_date)
-	`
+        INSERT INTO subscriptions (service_name, price, user_id, start_date, end_date) 
+        VALUES ($1, $2, $3, $4, $5) 
+        RETURNING id`
 
-	_, err := r.Db.NamedExecContext(ctx, query, sub)
+	err := r.Db.QueryRowContext(ctx, query,
+		sub.ServiceName,
+		sub.Price,
+		sub.UserID,
+		sub.StartDate,
+		sub.EndDate,
+	).Scan(&sub.ID)
+
 	if err != nil {
-		return fmt.Errorf("repository.Create: %w", err)
+		return models.Subscription{}, fmt.Errorf("repo.Create: %w", err)
 	}
 
-	return nil
+	return sub, nil
 }
 
 func (r *Repository) GetAll(ctx context.Context) ([]models.Subscription, error) {
