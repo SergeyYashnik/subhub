@@ -28,6 +28,10 @@ func (s *SubscriptionService) CreateSubscription(ctx context.Context, sub models
 		return fmt.Errorf("ID пользователя обязателен")
 	}
 
+	if sub.EndDate != nil && sub.EndDate.Before(sub.StartDate) {
+		return fmt.Errorf("end_date cannot be earlier than start_date")
+	}
+
 	return s.repo.Create(ctx, sub)
 }
 
@@ -46,6 +50,13 @@ func (s *SubscriptionService) UpdateSubscription(ctx context.Context, sub models
 	if sub.ID == "" {
 		return fmt.Errorf("id is required for update")
 	}
+
+	if sub.Price < 0 {
+		return fmt.Errorf("the price cannot be negative")
+	}
+	if sub.EndDate != nil && sub.EndDate.Before(sub.StartDate) {
+		return fmt.Errorf("end_date cannot be earlier than start_date")
+	}
 	return s.repo.Update(ctx, sub)
 }
 
@@ -56,17 +67,7 @@ func (s *SubscriptionService) DeleteSubscription(ctx context.Context, id string)
 	return s.repo.Delete(ctx, id)
 }
 
-func (s *SubscriptionService) GetStats(ctx context.Context, userID, serviceName, fromStr, toStr string) (int, error) {
-	from, err := time.Parse("01-2006", fromStr)
-	if err != nil {
-		return 0, fmt.Errorf("invalid from_date: %w", err)
-	}
-
-	to, err := time.Parse("01-2006", toStr)
-	if err != nil {
-		return 0, fmt.Errorf("invalid to_date: %w", err)
-	}
-
+func (s *SubscriptionService) GetStats(ctx context.Context, userID, serviceName string, from, to time.Time) (int, error) {
 	if to.Before(from) {
 		return 0, fmt.Errorf("to_date cannot be earlier than from_date")
 	}

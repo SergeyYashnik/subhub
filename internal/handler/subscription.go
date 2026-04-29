@@ -32,13 +32,11 @@ const dateLayout = "01-2006"
 func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateSubscriptionRequest
 
-	// Используем Decoder
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid request body"})
 		return
 	}
 
-	// Валидация даты (можно потом вынести в сервис или хелпер)
 	start, err := time.Parse(dateLayout, req.StartDate)
 	if err != nil {
 		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid start_date format, use MM-YYYY"})
@@ -61,18 +59,11 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		sub.EndDate = &end
 	}
 
-	if sub.EndDate != nil && sub.EndDate.Before(sub.StartDate) {
-		sendJSON(w, http.StatusBadRequest, Response{Error: "end_date cannot be earlier than start_date"})
-		return
-	}
-
-	// Вызов сервиса
 	if err := h.service.CreateSubscription(r.Context(), sub); err != nil {
-		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
+		sendJSON(w, http.StatusBadRequest, Response{Error: err.Error()})
 		return
 	}
 
-	// Красивый ответ в стиле Resource
 	sendJSON(w, http.StatusCreated, Response{
 		Message: "Subscription created successfully",
 		Data:    map[string]string{"status": "created"},
@@ -182,13 +173,8 @@ func (h *SubscriptionHandler) Update(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if currentSub.EndDate != nil && currentSub.EndDate.Before(currentSub.StartDate) {
-		sendJSON(w, http.StatusBadRequest, Response{Error: "end_date cannot be earlier than start_date"})
-		return
-	}
-
 	if err := h.service.UpdateSubscription(r.Context(), currentSub); err != nil {
-		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
+		sendJSON(w, http.StatusBadRequest, Response{Error: err.Error()})
 		return
 	}
 
@@ -235,12 +221,24 @@ func (h *SubscriptionHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 
 	userID := query.Get("user_id")
 	serviceName := query.Get("service_name")
-	from := query.Get("from")
-	to := query.Get("to")
 
-	// Базовая валидация обязательных полей
-	if userID == "" || from == "" || to == "" {
+	fromStr := query.Get("from")
+	toStr := query.Get("to")
+
+	if userID == "" || fromStr == "" || toStr == "" {
 		sendJSON(w, http.StatusBadRequest, Response{Error: "user_id, from and to are required parameters"})
+		return
+	}
+
+	from, err := time.Parse(dateLayout, fromStr)
+	if err != nil {
+		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid from format"})
+		return
+	}
+
+	to, err := time.Parse(dateLayout, toStr)
+	if err != nil {
+		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid to format"})
 		return
 	}
 
