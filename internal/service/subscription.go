@@ -6,6 +6,7 @@ import (
 	"Test_EM/internal/repository/postgres"
 	"context"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -32,7 +33,12 @@ func (s *SubscriptionService) CreateSubscription(ctx context.Context, sub models
 		return models.Subscription{}, fmt.Errorf("end_date cannot be earlier than start_date")
 	}
 
-	return s.repo.Create(ctx, sub)
+	createdSub, err := s.repo.Create(ctx, sub)
+	if err == nil {
+		log.Printf("[INFO] Service: subscription created: %s (ID: %s) for user %s",
+			createdSub.ServiceName, createdSub.ID, createdSub.UserID)
+	}
+	return createdSub, err
 }
 
 func (s *SubscriptionService) GetAllSubscriptions(ctx context.Context) ([]models.Subscription, error) {
@@ -57,14 +63,24 @@ func (s *SubscriptionService) UpdateSubscription(ctx context.Context, sub models
 	if sub.EndDate != nil && sub.EndDate.Before(sub.StartDate) {
 		return fmt.Errorf("end_date cannot be earlier than start_date")
 	}
-	return s.repo.Update(ctx, sub)
+
+	err := s.repo.Update(ctx, sub)
+	if err == nil {
+		log.Printf("[INFO] Service: subscription %s updated", sub.ID)
+	}
+	return err
 }
 
 func (s *SubscriptionService) DeleteSubscription(ctx context.Context, id string) error {
 	if id == "" {
 		return fmt.Errorf("id is required for delete")
 	}
-	return s.repo.Delete(ctx, id)
+
+	err := s.repo.Delete(ctx, id)
+	if err == nil {
+		log.Printf("[INFO] Service: subscription %s deleted", id)
+	}
+	return err
 }
 
 func (s *SubscriptionService) GetStats(ctx context.Context, userID, serviceName string, from, to time.Time) (int, error) {
@@ -97,5 +113,6 @@ func (s *SubscriptionService) GetStats(ctx context.Context, userID, serviceName 
 		}
 	}
 
+	log.Printf("[INFO] Service: stats calculated: user %s, sum: %d", userID, totalCost)
 	return totalCost, nil
 }

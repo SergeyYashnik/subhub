@@ -4,6 +4,7 @@ import (
 	"Test_EM/internal/models"
 	"Test_EM/internal/service"
 	"encoding/json"
+	"log"
 	"net/http"
 	"time"
 )
@@ -33,12 +34,14 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var req models.CreateSubscriptionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("[ERROR] Handler: Create: decode body: %v", err)
 		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid request body"})
 		return
 	}
 
 	start, err := time.Parse(dateLayout, req.StartDate)
 	if err != nil {
+		log.Printf("[ERROR] Handler: Create: parse start_date: %v", err)
 		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid start_date format, use MM-YYYY"})
 		return
 	}
@@ -53,6 +56,7 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 	if req.EndDate != "" {
 		end, err := time.Parse(dateLayout, req.EndDate)
 		if err != nil {
+			log.Printf("[ERROR] Handler: Create: parse end_date: %v", err)
 			sendJSON(w, http.StatusBadRequest, Response{Error: "invalid end_date format"})
 			return
 		}
@@ -61,6 +65,7 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 
 	createdSub, err := h.service.CreateSubscription(r.Context(), sub)
 	if err != nil {
+		log.Printf("[ERROR] Handler: Create: service call: %v", err)
 		sendJSON(w, http.StatusBadRequest, Response{Error: err.Error()})
 		return
 	}
@@ -81,6 +86,7 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *SubscriptionHandler) List(w http.ResponseWriter, r *http.Request) {
 	subs, err := h.service.GetAllSubscriptions(r.Context())
 	if err != nil {
+		log.Printf("[ERROR] Handler: List: %v", err)
 		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
 		return
 	}
@@ -108,6 +114,7 @@ func (h *SubscriptionHandler) Get(w http.ResponseWriter, r *http.Request) {
 
 	sub, err := h.service.GetSubscriptionByID(r.Context(), id)
 	if err != nil {
+		log.Printf("[ERROR] Handler: Get ID %s: %v", id, err)
 		sendJSON(w, http.StatusNotFound, Response{Error: "subscription not found"})
 		return
 	}
@@ -133,12 +140,14 @@ func (h *SubscriptionHandler) Update(w http.ResponseWriter, r *http.Request) {
 	var req models.UpdateSubscriptionRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("[ERROR] Handler: Update ID %s: decode: %v", id, err)
 		sendJSON(w, http.StatusBadRequest, Response{Error: "bad request body"})
 		return
 	}
 
 	currentSub, err := h.service.GetSubscriptionByID(r.Context(), id)
 	if err != nil {
+		log.Printf("[ERROR] Handler: Update: find ID %s: %v", id, err)
 		sendJSON(w, http.StatusNotFound, Response{Error: "subscription not found"})
 		return
 	}
@@ -174,6 +183,7 @@ func (h *SubscriptionHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.UpdateSubscription(r.Context(), currentSub); err != nil {
+		log.Printf("[ERROR] Handler: Update: service call ID %s: %v", id, err)
 		sendJSON(w, http.StatusBadRequest, Response{Error: err.Error()})
 		return
 	}
@@ -195,6 +205,7 @@ func (h *SubscriptionHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id := r.PathValue("id")
 
 	if err := h.service.DeleteSubscription(r.Context(), id); err != nil {
+		log.Printf("[ERROR] Handler: Delete ID %s: %v", id, err)
 		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
 		return
 	}
@@ -231,18 +242,21 @@ func (h *SubscriptionHandler) GetStats(w http.ResponseWriter, r *http.Request) {
 
 	from, err := time.Parse(dateLayout, fromStr)
 	if err != nil {
+		log.Printf("[ERROR] Handler: GetStats: parse from: %v", err)
 		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid from format"})
 		return
 	}
 
 	to, err := time.Parse(dateLayout, toStr)
 	if err != nil {
+		log.Printf("[ERROR] Handler: GetStats: parse to: %v", err)
 		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid to format"})
 		return
 	}
 
 	total, err := h.service.GetStats(r.Context(), userID, serviceName, from, to)
 	if err != nil {
+		log.Printf("[ERROR] Handler: GetStats: service call: %v", err)
 		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
 		return
 	}
