@@ -61,6 +61,11 @@ func (h *SubscriptionHandler) Create(w http.ResponseWriter, r *http.Request) {
 		sub.EndDate = &end
 	}
 
+	if sub.EndDate != nil && sub.EndDate.Before(sub.StartDate) {
+		sendJSON(w, http.StatusBadRequest, Response{Error: "end_date cannot be earlier than start_date"})
+		return
+	}
+
 	// Вызов сервиса
 	if err := h.service.CreateSubscription(r.Context(), sub); err != nil {
 		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
@@ -175,6 +180,11 @@ func (h *SubscriptionHandler) Update(w http.ResponseWriter, r *http.Request) {
 			}
 			currentSub.EndDate = &end
 		}
+	}
+
+	if currentSub.EndDate != nil && currentSub.EndDate.Before(currentSub.StartDate) {
+		sendJSON(w, http.StatusBadRequest, Response{Error: "end_date cannot be earlier than start_date"})
+		return
 	}
 
 	if err := h.service.UpdateSubscription(r.Context(), currentSub); err != nil {
