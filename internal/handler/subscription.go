@@ -141,35 +141,50 @@ func (h *SubscriptionHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	start, err := time.Parse(dateLayout, req.StartDate)
+	currentSub, err := h.service.GetSubscriptionByID(r.Context(), id)
 	if err != nil {
-		sendJSON(w, http.StatusBadRequest, Response{Error: "invalid start_date format"})
+		sendJSON(w, http.StatusNotFound, Response{Error: "subscription not found"})
 		return
 	}
 
-	sub := models.Subscription{
-		ID:          id,
-		ServiceName: req.ServiceName,
-		Price:       req.Price,
-		StartDate:   start,
+	if req.ServiceName != nil {
+		currentSub.ServiceName = *req.ServiceName
 	}
 
-	// Если есть дата окончания
-	if req.EndDate != "" {
-		end, err := time.Parse(dateLayout, req.EndDate)
-		if err == nil {
-			sub.EndDate = &end
+	if req.Price != nil {
+		currentSub.Price = *req.Price
+	}
+
+	if req.StartDate != nil {
+		start, err := time.Parse(dateLayout, *req.StartDate)
+		if err != nil {
+			sendJSON(w, http.StatusBadRequest, Response{Error: "invalid start_date format"})
+			return
+		}
+		currentSub.StartDate = start
+	}
+
+	if req.EndDate != nil {
+		if *req.EndDate == "" {
+			currentSub.EndDate = nil
+		} else {
+			end, err := time.Parse(dateLayout, *req.EndDate)
+			if err != nil {
+				sendJSON(w, http.StatusBadRequest, Response{Error: "invalid end_date format"})
+				return
+			}
+			currentSub.EndDate = &end
 		}
 	}
 
-	if err := h.service.UpdateSubscription(r.Context(), sub); err != nil {
+	if err := h.service.UpdateSubscription(r.Context(), currentSub); err != nil {
 		sendJSON(w, http.StatusInternalServerError, Response{Error: err.Error()})
 		return
 	}
 
 	sendJSON(w, http.StatusOK, Response{
 		Message: "Subscription updated successfully",
-		Data:    sub,
+		Data:    currentSub,
 	})
 }
 

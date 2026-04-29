@@ -20,8 +20,8 @@ type CreateSubscriptionRequest struct {
 }
 
 type UpdateSubscriptionRequest struct {
-	ServiceName string `json:"service_name" example:"Yandex Plus"`
-	Price       int    `json:"price" example:"400"`
-	StartDate   string `json:"start_date" example:"07-2025"`
-	EndDate     string `json:"end_date,omitempty" example:"08-2025"`
+	ServiceName *string `json:"service_name" example:"Yandex Plus"`
+	Price       *int    `json:"price" example:"400"`
+	StartDate   *string `json:"start_date" example:"07-2025"`
+	EndDate     *string `json:"end_date,omitempty" example:"08-2025"`
 }
